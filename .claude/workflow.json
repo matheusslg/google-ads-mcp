@@ -1,0 +1,25 @@
+{
+  "project": "google-ads-mcp",
+  "ticketing": {
+    "platform": "github",
+    "jiraProject": null,
+    "jiraCloudId": null
+  },
+  "delegate": {
+    "githubOwner": "matheusslg",
+    "githubRepo": "google-ads-mcp",
+    "defaultLabels": ["tech-lead", "tracked"]
+  },
+  "github": {
+    "owner": "matheusslg",
+    "repo": "google-ads-mcp"
+  },
+  "design": {
+    "figma": null,
+    "system": null,
+    "styleGuide": null
+  },
+  "scopes": [],
+  "agents": {},
+  "init_script": null
+}
