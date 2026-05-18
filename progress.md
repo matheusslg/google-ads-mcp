@@ -21,19 +21,32 @@
 - `uv.lock` committed; ruff + ruff-format + mypy + pytest gates all clean
 **Discovered**: FastMCP 3.3.1 is current stable (spec's `>=2.0` floor accommodated; API surface — `from fastmcp import FastMCP` and `@mcp.tool` decorator — verified working)
 **Branch**: `feat/issue-1-bootstrap` (built atop spec commit `2ccb67d` and plan commit `0cfdae2`)
-**Next**: Push branch + open PR closing #1 → review/merge → start #2 (Basic Access application) and #3 (OAuth setup).
+**Result**: PR #17 merged into `main`.
+
+### Session 2 (2026-05-18)
+**Focus**: `/wf-core:wf-generate` — scaffold agents and skills for the Python/MCP stack
+**Completed**:
+- Created 2 agents under `.claude/agents/`:
+  - `google-ads-mcp-backend` (Python/MCP-customized — diverges from the generic web-flavored template to match the actual stack: FastMCP, google-ads SDK, OAuth2, uv, pytest, ruff, mypy. Encodes the PRD safety model.)
+  - `google-ads-mcp-reviewer` (read-only, with PRD-specific review checklist)
+- Created 6 skills under `.claude/skills/`: `py-test`, `py-lint`, `uv-deps`, `gh-pr`, `gh-issues`, `gh-pr-status`
+- Updated `.claude/workflow.json`: `scopes: ["backend"]`, `agents` map, `init_script: "uv sync"`
+- Rewrote `standards.md` with Python/uv conventions, MCP tool-design contracts, mutation safety checklist, file-layout starting point
+- Branch: `chore/wf-generate` (per the never-commit-to-main rule)
+**Skipped intentionally — no stack fit**: `ui-developer`, `fullstack-developer`, `generic-developer`, docker-*, db-*, visual-verify, agent-browser, nest-*, next-*
+**Result**: PR #16 merged into `main` (after rebase to resolve `progress.md` conflict with Session 3 entry).
 
 ### Session 1 (2026-05-17)
-**Focus**: Project initialization
+**Focus**: Project initialization + PRD parsing
 **Completed**:
-- Initialized git repository (main branch)
-- Created public GitHub repo: matheusslg/google-ads-mcp
-- Created workflow configuration (.claude/workflow.json) — ticketing: GitHub Issues
-- Set up progress tracking (this file)
-- Added generic standards.md placeholder
-- Pushed `main` to origin; added MIT LICENSE
-- Created 15 parent issues from PRD via `/wf-core:wf-parse-prd`
-**Next**: Run `/wf-core:wf-generate` to detect the Python/MCP stack and create agents (handled in a separate branch `chore/wf-generate`).
+- Initialized git repository (`main`)
+- Created public GitHub repo: `matheusslg/google-ads-mcp`
+- Created workflow scaffolding: `.claude/workflow.json`, `progress.md`, `standards.md` (generic placeholder)
+- Pushed `main` to origin; switched origin from SSH to HTTPS (gh-token-backed) because no local SSH key was wired
+- Added MIT LICENSE (`Copyright (c) 2026 Matheus Nascimento Cavallini`)
+- Created 15 parent issues (#1–#15) from PRD via `/wf-core:wf-parse-prd`, covering Phases 0–3
+- Created labels: `phase:0-mvp`, `phase:1-safe-writes`, `phase:2-drafting`, `phase:3-hardening`, `type:epic`, `priority:p0`, `priority:p1`, `admin`
+**Notable choice**: Moved "Apply for Google Ads API Basic Access" from Phase 1 (where the PRD listed it) to Phase 0 (#2), because approval takes 1–4 weeks and would otherwise block Phase 1 testing.
 
 ---
 
@@ -43,25 +56,29 @@
 > Keep only the last 5 sessions in this file for AI readability.
 
 ## In Progress
-- `feat/issue-1-bootstrap` branch — implementation complete; awaiting push + PR for #1
-- `chore/wf-generate` branch — PR #16 open with agents + skills scaffolding; will land before or alongside this branch
+- None — both bootstrap PRs (#16 wf-generate, #17 issue #1) merged. Phase 0 development can begin.
 
 ## Next Session Should
-- [ ] Merge PR for #1 (after `feat/issue-1-bootstrap` is pushed and reviewed)
 - [ ] File the Basic Access application (#2) — external SLA is 1–4 weeks; start day-1 to avoid blocking Phase 1
 - [ ] Start #3 (OAuth2 setup helper) — unblocks all read tools (#4, #5, #6)
-- [ ] Resolve PRD Open Questions (default `customer_id`, summary language, fixture strategy: synthetic vs anonymized real) before breaking down #3 and #5
+- [ ] Resolve PRD Open Questions before breaking down #3 and #5:
+  - default `customer_id` config? (affects #3)
+  - language for `summarize_performance`? (affects #5)
+  - test fixtures: synthetic vs anonymized real? (affects every Phase 0 test)
 
 ## Decisions Made
-- Ticketing platform: GitHub Issues (matches MIT/OSS distribution model)
-- Repository visibility: Public (MIT license, per PRD)
-- Distribution model: `uvx` (per PRD — same playbook as google-search-console-mcp; reference repo is TypeScript/Node, so it informs project shape only, not language stack)
-- Backend agent customized for Python/MCP (not generic web-flavored template); skipped ui/fullstack/docker/db skills (no stack fit)
-- Day-1 server scaffold: src-layout, `uv init --package`, single-file `server.py` (modular split deferred until first real tool lands in #4)
-- Author email on PyPI metadata: `nascimentocavallini@hotmail.com` for v0.0.1; revisit before v0.1.0 (#7) if a noreply form is preferred
+- **Ticketing platform**: GitHub Issues (matches MIT/OSS distribution model)
+- **Repository visibility**: Public (MIT license, per PRD)
+- **Distribution model**: `uvx` (per PRD — same playbook as `google-search-console-mcp`; reference repo is TypeScript/Node, so it informs project shape only, not language stack)
+- **Backend agent**: customized for Python/MCP rather than using the web-flavored template verbatim, to avoid agent prompts that reference non-existent HTTP/DB concepts
+- **Skill set**: minimal MCP-appropriate (6 skills) rather than the full menu — no UI, no DB, no Docker in this project
+- **Day-1 server scaffold**: src-layout, `uv init --package`, single-file `server.py` (modular split deferred until first real tool lands in #4)
+- **`init_script`**: `uv sync` (set in `workflow.json` during Session 2; functional once Session 3's `pyproject.toml` landed)
+- **Author email on PyPI metadata**: `nascimentocavallini@hotmail.com` for v0.0.1; revisit before v0.1.0 (#7) if a noreply form is preferred
 
 ## Notes
 - PRD.md is in the repo root and is the source of truth for scope, non-goals, and tool surface
 - Reference implementation playbook: https://github.com/matheusslg/google-search-console-mcp
 - Spec for issue #1: `docs/specs/2026-05-18-issue-1-bootstrap-design.md`; plan: `docs/plans/2026-05-18-issue-1-bootstrap-plan.md`
 - FastMCP version pulled by uv at scaffold time: 3.3.1 (constraint `>=2.0`); decorator form `@mcp.tool` without parens confirmed working
+- PRD line references in issue bodies are pinned to the committed PRD.md — if the PRD is edited, those references may drift

@@ -19,7 +19,10 @@
     "system": null,
     "styleGuide": null
   },
-  "scopes": [],
-  "agents": {},
-  "init_script": null
+  "scopes": ["backend"],
+  "agents": {
+    "backend": ".claude/agents/google-ads-mcp-backend.md",
+    "reviewer": ".claude/agents/google-ads-mcp-reviewer.md"
+  },
+  "init_script": "uv sync"
 }
