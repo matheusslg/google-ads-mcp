@@ -1,0 +1,16 @@
+[project]
+name = "google-ads-mcp"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "Matheus Cavallini", email = "nascimentocavallini@hotmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+google-ads-mcp = "google_ads_mcp:main"
+
+[build-system]
+requires = ["uv_build>=0.9.18,<0.10.0"]
+build-backend = "uv_build"
