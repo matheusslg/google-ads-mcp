@@ -5,9 +5,27 @@
 
 ## Current Status
 **Phase**: Phase 0 — MVP Read-Only (in progress)
-**Last Updated**: 2026-05-18
+**Last Updated**: 2026-05-19
 
 ---
+
+### Session 4 (2026-05-19)
+**Focus**: Issue #2 — Apply for Google Ads API Basic Access + write `docs/developer-token.md`
+**Completed**:
+- Filed Basic Access application via https://ads.google.com/aw/apicenter
+  - Applicant: Cavallini Imóveis (`https://cavalliniimoveis.com.br/`)
+  - API contact email: `cavallini.matheus34@gmail.com`
+  - Design doc uploaded: PRD.md → PDF (via GitHub renderer print-to-PDF)
+  - Field 8 (access): Both internal and external users
+  - Field 11 (campaign types): Search, Display
+  - Field 12 (capabilities): Campaign Management + Reporting
+- Wrote `docs/developer-token.md` — full end-user setup guide: prerequisites (MCC), four access tiers, all 12 form fields with example answers, Test Account fallback, common rejection patterns, BYO-token model notes
+- Corrected outdated risk note in `PRD.md` line 180: Basic Access SLA is ~3 business days (per Google's confirmation screen), not "1–4 weeks" — re-wrote the risk + mitigation accordingly
+**Discovered**:
+- Google's confirmation screen states the SLA is "~3 business days" (some applications may take longer); old PRD claim of 1–4 weeks was inaccurate
+- Test Account tier suffices for all Phase 0 development (issues #3–#7) — Basic Access is only strictly needed for Phase 1+ mutations against real production accounts and for our own Cavallini Imóveis ad operations
+**Branch**: `chore/issue-2-developer-token`
+**Next**: Await Google compliance team response (case ID arrives by email at `cavallini.matheus34@gmail.com`). Meanwhile, brainstorm + implement #3 (OAuth setup) against a Test Account.
 
 ### Session 3 (2026-05-18)
 **Focus**: Issue #1 — Bootstrap project skeleton (executed via `superpowers:subagent-driven-development`)
@@ -56,11 +74,14 @@
 > Keep only the last 5 sessions in this file for AI readability.
 
 ## In Progress
-- None — both bootstrap PRs (#16 wf-generate, #17 issue #1) merged. Phase 0 development can begin.
+- `chore/issue-2-developer-token` branch — Basic Access application submitted; docs/developer-token.md drafted; PR pending
+- Issue #2 itself — open until Google's compliance team responds (~3 business days, by 2026-05-22)
 
 ## Next Session Should
-- [ ] File the Basic Access application (#2) — external SLA is 1–4 weeks; start day-1 to avoid blocking Phase 1
-- [ ] Start #3 (OAuth2 setup helper) — unblocks all read tools (#4, #5, #6)
+- [ ] Open PR for `chore/issue-2-developer-token` → merge it (the docs deliverable is complete; the application is logged)
+- [ ] When Google emails approval/rejection, update `docs/developer-token.md` "This project's own application status" table + close #2
+- [ ] Create a Test Account under the manager account (`ads.google.com` → Accounts → `+` → Create test account) — needed for #4–#6 development
+- [ ] Brainstorm + implement #3 (OAuth2 setup helper) — can proceed against the Test Account without Basic Access
 - [ ] Resolve PRD Open Questions before breaking down #3 and #5:
   - default `customer_id` config? (affects #3)
   - language for `summarize_performance`? (affects #5)
