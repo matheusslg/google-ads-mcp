@@ -185,9 +185,16 @@ The result: developers building AI agents over Google Ads write the same glue co
 ## Open Questions
 
 - **MCC hierarchy support in v1, or punt?** Listing sub-accounts is in MVP; creating/linking/unlinking is out. Decide based on early user feedback.
+  - **Resolved 2026-05-19**: Confirmed consistent with existing Non-Goals (line 52). v1 supports listing sub-accounts only; create/link/unlink remains out. Revisit post-v1 if user feedback demands.
+
 - **How to expose customer_id selection?** Every tool requires `customer_id`. Should we support a default-customer config so users don't have to pass it on every call, or always require explicit passing?
+  - **Resolved 2026-05-19**: Default in config + per-call override. Users set `default_customer_id` in `~/.config/google-ads-mcp/credentials.json` (or via env var); every tool accepts a `customer_id` parameter that overrides the default. Mitigation for wrong-account risk: every tool response includes the `customer_id` it operated on; mutation responses additionally surface it in the `warnings` array. (Affects #3 OAuth setup + every tool from #4 onward.)
+
 - **Output language for `summarize_performance`?** Hardcoded English, locale-aware, or user-configurable? Author's home market is pt-BR; first contributors may prefer i18n.
+  - **Resolved 2026-05-19**: English only for v0.1. Rationale: the narrative output is consumed by the LLM (Claude / Cursor), which then talks to the user in whatever language they converse in — so English narrative → LLM → pt-BR output to a pt-BR user is free, no i18n infrastructure required. Code comment at the narrative-generation site notes where i18n would plug in if demand emerges. (Affects #5 reporting tools.)
+
 - **Test fixtures: real anonymized data, or all-synthetic?** Real data is more realistic but harder to share publicly. Lean synthetic for v0.1.
+  - **Resolved 2026-05-19**: All-synthetic unit fixtures + integration smoke tests against Google's Test Account tier (itself synthetic by design). Zero privacy risk, fully shareable, no anonymization machinery to maintain. Reactive escape hatch: add anonymized real fixtures only if a real-world API quirk forces it. (Affects every Phase 0 test from #4 onward.)
 
 ---
 *Generated with /wf-core:wf-create-prd*

@@ -9,6 +9,17 @@
 
 ---
 
+### Session 5 (2026-05-19)
+**Focus**: Resolve the four PRD Open Questions before #3 design work
+**Completed**:
+- **Q1 — MCC hierarchy in v1**: Confirmed listing-only; create/link/unlink stays out per existing Non-Goals
+- **Q2 — `customer_id` selection**: Default in config (`~/.config/google-ads-mcp/credentials.json` or env var) + per-call override. Every tool response includes the `customer_id` it operated on; mutation responses include it in `warnings` for safety. Affects #3 and every downstream tool.
+- **Q3 — `summarize_performance` language**: English only for v0.1. Narrative output is consumed by the LLM, which translates to the user's conversational language for free. No i18n infrastructure now.
+- **Q4 — Test fixtures**: All-synthetic unit fixtures + integration smoke against Google Test Accounts. Reactive escape hatch only if a real-world quirk forces anonymized real data.
+- All 4 resolutions written into `PRD.md` `## Open Questions` section as `**Resolved 2026-05-19**:` annotations
+**Branch**: `chore/resolve-prd-open-questions`
+**Next**: Brainstorm #3 (OAuth2 setup helper) — design will now reference the `default_customer_id` config slot decided in Q2.
+
 ### Session 4 (2026-05-19)
 **Focus**: Issue #2 — Apply for Google Ads API Basic Access + write `docs/developer-token.md`
 **Completed**:
