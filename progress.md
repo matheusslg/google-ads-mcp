@@ -9,6 +9,21 @@
 
 ---
 
+### Session 7 (2026-06-03)
+**Focus**: Issue #3 — implement OAuth2 setup helper + credential management
+**Completed**:
+- Added 3 runtime deps (`google-ads`, `google-auth`, `google-auth-oauthlib`)
+- `src/google_ads_mcp/auth/__init__.py` — `CREDENTIALS_PATH`, error classes, `load_credentials`, `get_default_customer_id`, `get_google_ads_client`
+- `src/google_ads_mcp/auth/setup.py` — `validate_customer_id`, `load_client_secrets_json`, `write_credentials_file`, `_run_oauth_flow`, `run_setup(argv)` wizard
+- `src/google_ads_mcp/server.py` — argv dispatch: `setup` → wizard, else → server
+- `tests/conftest.py` — first shared fixture (`tmp_credentials_dir`)
+- 14 new tests across `tests/auth/test_load.py`, `tests/auth/test_setup_helpers.py`, and `tests/test_server.py`
+- README "Setup (first-time only)" section + Claude Desktop config note revision
+- `docs/developer-token.md` "After approval" → points at `uvx google-ads-mcp setup`
+- All quality gates clean (pytest, ruff check, ruff format, mypy strict)
+**Branch**: `feat/issue-3-oauth-setup`
+**Next**: PR review/merge → close #3 → start #4 (Read-only listing tools, against Test Account).
+
 ### Session 6 (2026-05-21 → 2026-06-03)
 **Focus**: Brainstorm issue #3 (OAuth2 setup helper & credential management); produce design spec
 **Completed**:
@@ -95,14 +110,14 @@
 > Keep only the last 5 sessions in this file for AI readability.
 
 ## In Progress
-- `feat/issue-3-oauth-setup` branch — design spec committed (`84be231`); awaiting implementation plan + implementation
-- Issue #2 — still open pending Google compliance team response (filed 2026-05-19; original 3-business-day SLA elapsed; check inbox or follow up)
+- `feat/issue-3-oauth-setup` branch — implementation complete; PR open awaiting review
+- Issue #2 — still open pending Google compliance team response
 
 ## Next Session Should
-- [ ] Invoke `superpowers:writing-plans` against the #3 design spec; produce `docs/plans/<date>-issue-3-oauth-setup-plan.md`
-- [ ] Then execute via `superpowers:subagent-driven-development` (same flow as #1)
-- [ ] Check `cavallini.matheus34@gmail.com` for Google compliance team's response on #2; update `docs/developer-token.md` status table and close #2 if approved/rejected
-- [ ] Create a Test Account under the manager account (`ads.google.com` → Accounts → `+` → Create test account) — needed to actually use the setup wizard end-to-end during #3 implementation
+- [ ] Merge PR for #3
+- [ ] Check `cavallini.matheus34@gmail.com` for Google compliance team's response on #2
+- [ ] Brainstorm + implement #4 (read-only listing tools) against the Test Account
+- [ ] Create a Test Account if not already done (`ads.google.com` → Accounts → `+` → Create test account)
 
 ## Decisions Made
 - **Ticketing platform**: GitHub Issues (matches MIT/OSS distribution model)
