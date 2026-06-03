@@ -1,5 +1,7 @@
 """FastMCP server entry point for google-ads-mcp."""
 
+import sys
+
 from fastmcp import FastMCP
 
 mcp: FastMCP = FastMCP("google-ads-mcp")
@@ -15,7 +17,11 @@ def ping() -> dict[str, bool]:
 
 
 def main() -> None:
-    """Run the MCP server over stdio. Used as the `google-ads-mcp` console script."""
+    """Entry point — dispatches between the setup wizard and the MCP server."""
+    if len(sys.argv) > 1 and sys.argv[1] == "setup":
+        from google_ads_mcp.auth.setup import run_setup
+
+        sys.exit(run_setup(sys.argv[2:]))
     mcp.run()
 
 
