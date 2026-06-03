@@ -13,6 +13,24 @@ uvx google-ads-mcp
 
 (Full install + Google Ads OAuth setup walkthrough lands in #3 and is documented in `docs/developer-token.md` once #2 ships.)
 
+## Setup (first-time only)
+
+Before Claude Desktop can connect, run the setup wizard once:
+
+```bash
+uvx google-ads-mcp setup
+```
+
+The wizard:
+1. Prints the Google Cloud Console steps to create an OAuth 2.0 client (Desktop application type)
+2. Prompts for your developer token (from <https://ads.google.com/aw/apicenter>)
+3. Prompts for the path to your downloaded `client_secrets.json`
+4. Prompts for your Manager (MCC) ID and the default Google Ads account ID
+5. Opens a browser tab for OAuth consent
+6. Saves credentials to `~/.config/google-ads-mcp/credentials.json` (mode 0600)
+
+See [`docs/developer-token.md`](docs/developer-token.md) for the full Google Cloud Console walkthrough.
+
 ## Claude Desktop config
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or the equivalent path:
@@ -28,7 +46,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 }
 ```
 
-Environment variables for the Google Ads developer token / OAuth refresh token are added once #3 wires the auth flow.
+Once the setup wizard above has run, the server reads credentials from `~/.config/google-ads-mcp/credentials.json` automatically. No additional environment variables are required.
 
 ## First call example
 
