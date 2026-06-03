@@ -129,7 +129,7 @@ Once you receive the approval email:
 
 1. Return to https://ads.google.com/aw/apicenter.
 2. Copy your developer token from the API Center page.
-3. Set it as the `GOOGLE_ADS_DEVELOPER_TOKEN` environment variable, or store it in `~/.config/google-ads-mcp/credentials.json` per the OAuth setup helper (see [issue #3](https://github.com/matheusslg/google-ads-mcp/issues/3) once that lands).
+3. Run `uvx google-ads-mcp setup` — the wizard will prompt for the developer token, your `client_secrets.json` path (the OAuth 2.0 Desktop client you created in Google Cloud Console), your Manager (MCC) ID, and the default Google Ads account ID. It then runs the OAuth flow against a local browser tab and writes everything to `~/.config/google-ads-mcp/credentials.json`.
 
 ## If you're rejected
 
