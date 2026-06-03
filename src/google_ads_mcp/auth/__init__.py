@@ -51,8 +51,7 @@ def load_credentials(path: Path = CREDENTIALS_PATH) -> dict[str, Any]:
     """
     if not path.exists():
         raise CredentialsNotFound(
-            f"Credentials not found at {path}. "
-            "Run `google-ads-mcp setup` to create them."
+            f"Credentials not found at {path}. Run `google-ads-mcp setup` to create them."
         )
     try:
         data: dict[str, Any] = json.loads(path.read_text())
@@ -64,13 +63,17 @@ def load_credentials(path: Path = CREDENTIALS_PATH) -> dict[str, Any]:
     missing = [f for f in REQUIRED_FIELDS if f not in data]
     if missing:
         raise CredentialsMalformed(
-            f"Credentials file at {path} is missing required fields: {missing}. "
-            "Re-run `google-ads-mcp setup` to recreate it."
+            f"Credentials file at {path} is missing required fields: "
+            f"{', '.join(missing)}. Re-run `google-ads-mcp setup` to recreate it."
         )
     return data
 
 
 def get_default_customer_id(path: Path = CREDENTIALS_PATH) -> str:
     """Return the `default_customer_id` from credentials.json."""
-    value: str = load_credentials(path)["default_customer_id"]
+    value = load_credentials(path)["default_customer_id"]
+    if not isinstance(value, str):
+        raise CredentialsMalformed(
+            f"default_customer_id must be a string, got {type(value).__name__}."
+        )
     return value
