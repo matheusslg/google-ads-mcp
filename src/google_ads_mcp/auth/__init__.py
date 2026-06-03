@@ -6,7 +6,9 @@ is what the server and tool modules import at request time.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from typing import Any
 
 CREDENTIALS_PATH: Path = Path.home() / ".config" / "google-ads-mcp" / "credentials.json"
 
@@ -38,3 +40,37 @@ class CredentialsMalformed(CredentialsError):
 
 class CredentialsRevoked(CredentialsError):
     """The refresh token has been revoked or expired."""
+
+
+def load_credentials(path: Path = CREDENTIALS_PATH) -> dict[str, Any]:
+    """Read and validate the credentials file.
+
+    Raises:
+        CredentialsNotFound: if the file does not exist.
+        CredentialsMalformed: if the file is not valid JSON or is missing required fields.
+    """
+    if not path.exists():
+        raise CredentialsNotFound(
+            f"Credentials not found at {path}. "
+            "Run `google-ads-mcp setup` to create them."
+        )
+    try:
+        data: dict[str, Any] = json.loads(path.read_text())
+    except json.JSONDecodeError as e:
+        raise CredentialsMalformed(
+            f"Credentials file at {path} is not valid JSON: {e.msg}. "
+            "Re-run `google-ads-mcp setup` to recreate it."
+        ) from e
+    missing = [f for f in REQUIRED_FIELDS if f not in data]
+    if missing:
+        raise CredentialsMalformed(
+            f"Credentials file at {path} is missing required fields: {missing}. "
+            "Re-run `google-ads-mcp setup` to recreate it."
+        )
+    return data
+
+
+def get_default_customer_id(path: Path = CREDENTIALS_PATH) -> str:
+    """Return the `default_customer_id` from credentials.json."""
+    value: str = load_credentials(path)["default_customer_id"]
+    return value
