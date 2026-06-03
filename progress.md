@@ -5,9 +5,19 @@
 
 ## Current Status
 **Phase**: Phase 0 — MVP Read-Only (in progress)
-**Last Updated**: 2026-05-19
+**Last Updated**: 2026-06-03
 
 ---
+
+### Session 6 (2026-05-21 → 2026-06-03)
+**Focus**: Brainstorm issue #3 (OAuth2 setup helper & credential management); produce design spec
+**Completed**:
+- Pulled the official Google Ads Python SDK credential shape via Context7 (`GoogleAdsClient.load_from_dict()` keys + the OAuth Flow snippet from Google's own docs)
+- Resolved 4 design decisions: (Q1) single-account flat `credentials.json` with `schema_version: 1`; (Q2) `google-ads-mcp setup` subcommand via argv dispatch in `main()`; (Q3) stdlib `argparse` + `getpass`; (Q4) path-to-`client_secrets.json` for OAuth + pre-flight Cloud Console banner
+- Wrote `docs/specs/2026-05-28-issue-3-oauth-setup-design.md` (413 lines) — covers file layout (`auth/` sub-package), credentials.json schema, 5-step wizard flow, runtime auth module (with code), `server.py` argv dispatch, 3-class `CredentialsError` hierarchy, error matrix, test list, out-of-scope, verification-at-scaffold-time
+- Spec approved 2026-06-03
+**Branch**: `feat/issue-3-oauth-setup` (spec is commit 1; plan + implementation will land on top)
+**Next**: Invoke `superpowers:writing-plans` to produce a bite-sized TDD implementation plan from the spec.
 
 ### Session 5 (2026-05-19)
 **Focus**: Resolve the four PRD Open Questions before #3 design work
@@ -85,18 +95,14 @@
 > Keep only the last 5 sessions in this file for AI readability.
 
 ## In Progress
-- `chore/issue-2-developer-token` branch — Basic Access application submitted; docs/developer-token.md drafted; PR pending
-- Issue #2 itself — open until Google's compliance team responds (~3 business days, by 2026-05-22)
+- `feat/issue-3-oauth-setup` branch — design spec committed (`84be231`); awaiting implementation plan + implementation
+- Issue #2 — still open pending Google compliance team response (filed 2026-05-19; original 3-business-day SLA elapsed; check inbox or follow up)
 
 ## Next Session Should
-- [ ] Open PR for `chore/issue-2-developer-token` → merge it (the docs deliverable is complete; the application is logged)
-- [ ] When Google emails approval/rejection, update `docs/developer-token.md` "This project's own application status" table + close #2
-- [ ] Create a Test Account under the manager account (`ads.google.com` → Accounts → `+` → Create test account) — needed for #4–#6 development
-- [ ] Brainstorm + implement #3 (OAuth2 setup helper) — can proceed against the Test Account without Basic Access
-- [ ] Resolve PRD Open Questions before breaking down #3 and #5:
-  - default `customer_id` config? (affects #3)
-  - language for `summarize_performance`? (affects #5)
-  - test fixtures: synthetic vs anonymized real? (affects every Phase 0 test)
+- [ ] Invoke `superpowers:writing-plans` against the #3 design spec; produce `docs/plans/<date>-issue-3-oauth-setup-plan.md`
+- [ ] Then execute via `superpowers:subagent-driven-development` (same flow as #1)
+- [ ] Check `cavallini.matheus34@gmail.com` for Google compliance team's response on #2; update `docs/developer-token.md` status table and close #2 if approved/rejected
+- [ ] Create a Test Account under the manager account (`ads.google.com` → Accounts → `+` → Create test account) — needed to actually use the setup wizard end-to-end during #3 implementation
 
 ## Decisions Made
 - **Ticketing platform**: GitHub Issues (matches MIT/OSS distribution model)
