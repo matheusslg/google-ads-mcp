@@ -294,8 +294,12 @@ def run_setup(argv: list[str]) -> int:
         print(f"\n{e}", file=sys.stderr)
         return 1
 
-    # Step 3 — OAuth flow (Task 10)
-    refresh_token = _run_oauth_flow(client_secrets_path)
+    # Step 3 — OAuth flow
+    try:
+        refresh_token = _run_oauth_flow(client_secrets_path)
+    except (OSError, TimeoutError, RuntimeError) as e:
+        print(f"\nOAuth flow failed: {e}", file=sys.stderr)
+        return 1
 
     # Step 4 — assemble and write
     client_secrets = load_client_secrets_json(client_secrets_path)

@@ -11,8 +11,6 @@
 uvx google-ads-mcp
 ```
 
-(Full install + Google Ads OAuth setup walkthrough lands in #3 and is documented in `docs/developer-token.md` once #2 ships.)
-
 ## Setup (first-time only)
 
 Before Claude Desktop can connect, run the setup wizard once:
