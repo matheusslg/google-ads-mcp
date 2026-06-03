@@ -8,7 +8,11 @@ from pathlib import Path
 
 import pytest
 
-from google_ads_mcp.auth.setup import validate_customer_id, write_credentials_file
+from google_ads_mcp.auth.setup import (
+    load_client_secrets_json,
+    validate_customer_id,
+    write_credentials_file,
+)
 
 
 def test_validate_customer_id_accepts_10_digits() -> None:
@@ -61,3 +65,26 @@ def test_write_credentials_file_roundtrips_json(tmp_path: Path) -> None:
     creds = _valid_creds()
     write_credentials_file(path, creds)
     assert json.loads(path.read_text()) == creds
+
+
+def test_load_client_secrets_json_accepts_installed_block(tmp_path: Path) -> None:
+    secrets_path = tmp_path / "client_secret.json"
+    secrets_path.write_text(
+        json.dumps(
+            {
+                "installed": {
+                    "client_id": "1234.apps.googleusercontent.com",
+                    "client_secret": "GOCSPX-secret",
+                    "redirect_uris": ["http://localhost"],
+                }
+            }
+        )
+    )
+    result = load_client_secrets_json(secrets_path)
+    assert result["client_id"] == "1234.apps.googleusercontent.com"
+    assert result["client_secret"] == "GOCSPX-secret"
+
+
+def test_load_client_secrets_json_rejects_missing_file(tmp_path: Path) -> None:
+    with pytest.raises(FileNotFoundError):
+        load_client_secrets_json(tmp_path / "does-not-exist.json")
