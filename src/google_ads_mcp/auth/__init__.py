@@ -10,6 +10,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from google.ads.googleads.client import GoogleAdsClient
+
 CREDENTIALS_PATH: Path = Path.home() / ".config" / "google-ads-mcp" / "credentials.json"
 
 REQUIRED_FIELDS: tuple[str, ...] = (
@@ -77,3 +79,21 @@ def get_default_customer_id(path: Path = CREDENTIALS_PATH) -> str:
             f"default_customer_id must be a string, got {type(value).__name__}."
         )
     return value
+
+
+def get_google_ads_client(
+    path: Path = CREDENTIALS_PATH,
+    api_version: str = _DEFAULT_API_VERSION,
+) -> GoogleAdsClient:
+    """Build a GoogleAdsClient from credentials.json.
+
+    The SDK handles access-token refresh transparently using the refresh_token.
+    If the refresh token has been revoked, the first API call raises
+    `google.auth.exceptions.RefreshError`; tool code should catch it and
+    re-raise as CredentialsRevoked with re-auth guidance.
+    """
+    config = load_credentials(path)
+    sdk_config = {
+        k: v for k, v in config.items() if k not in ("schema_version", "default_customer_id")
+    }
+    return GoogleAdsClient.load_from_dict(sdk_config, version=api_version)
