@@ -11,8 +11,9 @@ import argparse
 import getpass
 import json
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 from google_ads_mcp.auth import CREDENTIALS_PATH
 
@@ -148,8 +149,12 @@ def _validate_non_empty(raw: str) -> str:
 
 def _validate_client_secrets_path(raw: str) -> Path:
     path = Path(raw.strip()).expanduser()
-    # load_client_secrets_json raises FileNotFoundError or ValueError
-    load_client_secrets_json(path)
+    # load_client_secrets_json raises FileNotFoundError or ValueError;
+    # convert FileNotFoundError to ValueError so _prompt_with_retry catches it.
+    try:
+        load_client_secrets_json(path)
+    except FileNotFoundError as e:
+        raise ValueError(str(e)) from e
     return path
 
 
