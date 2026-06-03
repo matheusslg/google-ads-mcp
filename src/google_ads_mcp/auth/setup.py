@@ -9,15 +9,28 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import hashlib
 import json
+import os
+import re
+import socket
 import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, TypeVar
+from urllib.parse import unquote
+
+from google_auth_oauthlib.flow import Flow
 
 from google_ads_mcp.auth import CREDENTIALS_PATH
 
 T = TypeVar("T")
+
+_OAUTH_SCOPE = "https://www.googleapis.com/auth/adwords"
+_OAUTH_REDIRECT_HOST = "127.0.0.1"
+_OAUTH_REDIRECT_PORT = 8080
+_OAUTH_REDIRECT_URI = f"http://{_OAUTH_REDIRECT_HOST}:{_OAUTH_REDIRECT_PORT}"
+_OAUTH_TIMEOUT_SECONDS = 300  # 5 min
 
 _BANNER = """\
 google-ads-mcp setup
@@ -159,11 +172,78 @@ def _validate_client_secrets_path(raw: str) -> Path:
 
 
 def _run_oauth_flow(client_secrets_path: Path) -> str:
-    """Run the installed-app OAuth2 flow, return the refresh_token.
+    """Run the installed-app OAuth2 flow against ``client_secrets_path``.
 
-    Implemented in Task 10.
+    Spins up a localhost socket on port 8080, prints the auth URL for the
+    user to open, captures the callback, verifies the state token, exchanges
+    the code, and returns the refresh_token.
+
+    Raises:
+        OSError: if port 8080 is in use.
+        TimeoutError: if no callback arrives within _OAUTH_TIMEOUT_SECONDS.
+        RuntimeError: on state mismatch or missing refresh_token.
     """
-    raise NotImplementedError("OAuth flow lands in Task 10")
+    flow = Flow.from_client_secrets_file(str(client_secrets_path), scopes=[_OAUTH_SCOPE])
+    flow.redirect_uri = _OAUTH_REDIRECT_URI
+
+    state = hashlib.sha256(os.urandom(1024)).hexdigest()
+    auth_url, _ = flow.authorization_url(
+        access_type="offline",
+        state=state,
+        prompt="consent",
+        include_granted_scopes="true",
+    )
+
+    print(f"\nOpen this URL in your browser to authorize:\n  {auth_url}\n")
+    print(f"Waiting for the authorization callback on {_OAUTH_REDIRECT_URI} ...")
+
+    sock = socket.socket()
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        sock.bind((_OAUTH_REDIRECT_HOST, _OAUTH_REDIRECT_PORT))
+    except OSError as e:
+        raise OSError(
+            f"Port {_OAUTH_REDIRECT_PORT} is in use. Close whatever is using it "
+            "(often another OAuth flow or a dev server) and re-run."
+        ) from e
+    sock.listen(1)
+    sock.settimeout(_OAUTH_TIMEOUT_SECONDS)
+
+    try:
+        connection, _ = sock.accept()
+    except TimeoutError as e:
+        raise TimeoutError("OAuth timed out after 5 minutes. Re-run `google-ads-mcp setup`.") from e
+
+    try:
+        request = connection.recv(2048).decode("utf-8")
+        code_match = re.search(r"code=([^&\s]+)", request)
+        state_match = re.search(r"state=([^&\s]+)", request)
+        if code_match is None or state_match is None:
+            raise RuntimeError("OAuth callback didn't include code + state. Re-run setup.")
+        code = unquote(code_match.group(1))
+        callback_state = unquote(state_match.group(1))
+        if callback_state != state:
+            raise RuntimeError("OAuth state mismatch (possible CSRF). Re-run setup.")
+
+        connection.sendall(
+            b"HTTP/1.1 200 OK\r\n"
+            b"Content-Type: text/html\r\n\r\n"
+            b"<h1>Authorization successful</h1>"
+            b"<p>You can close this window and return to the terminal.</p>"
+        )
+    finally:
+        connection.close()
+        sock.close()
+
+    flow.fetch_token(code=code)
+    refresh_token: str | None = flow.credentials.refresh_token
+    if refresh_token is None:
+        raise RuntimeError(
+            "Google did not return a refresh token. Revoke any prior "
+            "authorization for this OAuth client at "
+            "https://myaccount.google.com/permissions and re-run setup."
+        )
+    return refresh_token
 
 
 def run_setup(argv: list[str]) -> int:
