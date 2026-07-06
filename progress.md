@@ -9,6 +9,27 @@
 
 ---
 
+### Session 12 (2026-07-06)
+**Focus**: Phase 1 + Phase 2 + Phase 3 all-in-one (autonomous under `/goal`)
+**Completed**:
+- **Phase 1 (v0.2.0)** — #8 pause_campaign + enable_campaign with `MutationResponse` envelope + no-op detection; #9 update_campaign_budget + update_keyword_bid with guardrails (default max_increase_percent=50, bid default max_bid_cap=current×1.5); #10 add_negative_keywords batched + duplicate-skip; #11 universal `dry_run` audit tests + safety README section. Tag `v0.2.0` published.
+- **Phase 2 (v0.3.0)** — #12 draft_campaign_csv (Google Ads Editor v2 CSV from Pydantic spec); #13 draft_responsive_search_ad (15 headlines/4 descriptions, en+pt-br, char-limit truncation); #14 dry_run_changes multi-step preview forcing dry_run=True on every item. Tag `v0.3.0` published.
+- **Phase 3 (v1.0.0)** — #15 GitHub Actions CI matrix (Python 3.11+3.12, ruff/mypy strict/pytest on push+PR); docs/smoke-test-playbook.md with 6-step pre-release checklist. Tag `v1.0.0` published; CI green on first run.
+- **v1.0.0 live smoke** against Cavallini production account: 10/10 mutation+drafting tools OK. Surfaced real signal: guardrail refused a 66,566% budget increase cleanly; portfolio-managed keyword refused a bid update (current bid = $0, default cap = 0 × 1.5).
+- **Post-release polish**: #35 fixed (suppress "default cap applied" warning on decreases); #34 partial (pt-br templates rewritten to use gender/number-neutral phrasing — feminine plural nouns like "botas" now render correctly).
+- **Filed follow-ups**: #34 (RSA grammar hints or validate-only pivot), #35 (done)
+- 120 tests, all gates green on main
+**In Progress**:
+- Branch `fix/issue-34-rsa-grammar` — partial commit `2dac82b` on the branch (pt-br template rewrites). Still TODO: add `validate_rsa_ad(headlines, descriptions, language)` tool so Claude-generated creative can be validated (char limits + count) as the MCP-native primary pattern, with the template `draft_responsive_search_ad` staying as a stub starter.
+**Decisions**:
+- MutationResponse as a single shared Pydantic base (subclass-free) — served all 5 mutations without friction
+- Deterministic English templates for the summary narrative (LLM caller handles translation) — held through v0.3.0
+- pt-br templates: gender/number-neutral phrasing over parameterized hints (`{product_gender}`) — smaller API surface, no signature change needed
+**Next**:
+- Finish #34: add `validate_rsa_ad` tool + tests + docstring notes; merge branch → close #34
+- Consider announce/PyPI publish now that v1.0.0 is stable
+- Portfolio-bid case surfaced in smoke: could file an issue to detect and message it more clearly ("this keyword is under portfolio bidding; direct bid updates may not apply — check bid strategy")
+
 ### Session 11 (2026-07-06)
 **Focus**: Issue #7 — v0.1.0 release prep (autonomous under `/goal`)
 **Completed**:

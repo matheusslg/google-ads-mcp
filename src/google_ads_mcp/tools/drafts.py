@@ -175,6 +175,9 @@ _HEADLINES_EN = [
     "{product} Made Simple",
 ]
 
+# pt-br templates use gender/number-neutral phrasing on purpose (issue #34):
+# imperative verbs, invariant adjectives ("premium"), and noun phrases with
+# prepositions — no bare adjectives that must agree with the {product} noun.
 _HEADLINES_PT_BR = [
     "Compre {product}",
     "Melhor {product}",
@@ -188,8 +191,8 @@ _HEADLINES_PT_BR = [
     "Experimente {product}",
     "Promoção {product}",
     "Economize em {product}",
-    "Novo {product}",
-    "{product} rápido",
+    "Confira {product}",
+    "Entrega de {product}",
     "Só aqui: {product}",
 ]
 
@@ -200,8 +203,11 @@ _DESCRIPTIONS_EN = [
     "Shop {product} online. Great selection for {audience}, delivered fast.",
 ]
 
+# Descriptions also use gender/number-neutral phrasing — no adjectives that
+# must agree with {product} (e.g. "feito" was dropped since it agrees with the
+# noun's gender/number).
 _DESCRIPTIONS_PT_BR = [
-    "Descubra {product} feito para {audience}. Peça agora com entrega rápida.",
+    "Descubra {product} para {audience}. Peça agora com entrega rápida.",
     "{product} premium ao melhor preço. Ideal para {audience}. Compre hoje.",
     "A confiança de {audience}. Peça {product} com garantia de satisfação.",
     "Compre {product} online. Ótima seleção para {audience}, entrega rápida.",
@@ -262,4 +268,57 @@ def draft_responsive_search_ad(
         descriptions=descriptions,
         language=language,
         warnings=h_warnings + d_warnings,
+    )
+
+
+class ValidateRsaResponse(BaseModel):
+    valid: bool
+    headline_errors: list[str] = []
+    description_errors: list[str] = []
+    warnings: list[str] = []
+
+
+@mcp.tool
+def validate_rsa_ad(
+    headlines: list[str],
+    descriptions: list[str],
+) -> ValidateRsaResponse:
+    """Validate Responsive Search Ad content against Google Ads limits.
+
+    RSA rules: 3-15 headlines each ≤30 chars; 2-4 descriptions each ≤90 chars.
+    Use this to validate LLM-generated creative before pushing to Google Ads
+    Editor or the API — pairs well with `draft_responsive_search_ad` (the stub
+    templates) for iterative refinement.
+
+    Args:
+        headlines: List of headline candidates. 3-15 strings, each ≤30 chars.
+        descriptions: List of description candidates. 2-4 strings, each ≤90 chars.
+
+    Returns `valid=True` only if every constraint holds. Per-item errors are
+    returned in the corresponding *_errors lists — the caller (or LLM) can
+    then regenerate just the offending items.
+    """
+    headline_errors: list[str] = []
+    description_errors: list[str] = []
+
+    if not 3 <= len(headlines) <= 15:
+        headline_errors.append(f"expected 3-15 headlines, got {len(headlines)}")
+    for i, h in enumerate(headlines):
+        if not h.strip():
+            headline_errors.append(f"headline #{i + 1} is empty")
+        elif len(h) > 30:
+            headline_errors.append(f"headline #{i + 1} is {len(h)} chars (max 30): {h!r}")
+
+    if not 2 <= len(descriptions) <= 4:
+        description_errors.append(f"expected 2-4 descriptions, got {len(descriptions)}")
+    for i, d in enumerate(descriptions):
+        if not d.strip():
+            description_errors.append(f"description #{i + 1} is empty")
+        elif len(d) > 90:
+            description_errors.append(f"description #{i + 1} is {len(d)} chars (max 90): {d!r}")
+
+    return ValidateRsaResponse(
+        valid=not headline_errors and not description_errors,
+        headline_errors=headline_errors,
+        description_errors=description_errors,
     )

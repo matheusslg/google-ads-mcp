@@ -117,3 +117,51 @@ def test_draft_rsa_headlines_incorporate_product_description() -> None:
     resp = draft_responsive_search_ad("boots", "hikers")
     count_with_product = sum(1 for h in resp.headlines if "boots" in h)
     assert count_with_product >= len(resp.headlines) // 2
+
+
+# --- validate_rsa_ad (issue #34) ---
+
+
+def test_validate_rsa_ad_accepts_valid_content() -> None:
+    from google_ads_mcp.tools.drafts import validate_rsa_ad
+
+    resp = validate_rsa_ad(
+        headlines=["Buy Now", "Best Prices", "Free Shipping"],
+        descriptions=["Great products.", "Fast delivery."],
+    )
+    assert resp.valid is True
+    assert resp.headline_errors == []
+    assert resp.description_errors == []
+
+
+def test_validate_rsa_ad_rejects_too_few_headlines() -> None:
+    from google_ads_mcp.tools.drafts import validate_rsa_ad
+
+    resp = validate_rsa_ad(
+        headlines=["One", "Two"],
+        descriptions=["Ok description one", "Ok description two"],
+    )
+    assert resp.valid is False
+    assert any("3-15 headlines" in e for e in resp.headline_errors)
+
+
+def test_validate_rsa_ad_rejects_over_length_headline() -> None:
+    from google_ads_mcp.tools.drafts import validate_rsa_ad
+
+    resp = validate_rsa_ad(
+        headlines=["Ok", "Ok", "x" * 31],
+        descriptions=["Ok", "Ok"],
+    )
+    assert resp.valid is False
+    assert any("31 chars" in e for e in resp.headline_errors)
+
+
+def test_validate_rsa_ad_rejects_empty_description() -> None:
+    from google_ads_mcp.tools.drafts import validate_rsa_ad
+
+    resp = validate_rsa_ad(
+        headlines=["A", "B", "C"],
+        descriptions=["Real", "   "],
+    )
+    assert resp.valid is False
+    assert any("empty" in e for e in resp.description_errors)
