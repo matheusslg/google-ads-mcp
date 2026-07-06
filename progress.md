@@ -4,7 +4,7 @@
 > **Keep this file under 400 lines** - archive old sessions to `.claude/session-archive/`
 
 ## Current Status
-**Phase**: Phase 0 — MVP Read-Only **COMPLETE** (#4, #5, #6, #7 all merged). Awaiting user's Test-Account smoke + release publish, then Phase 1.
+**Phase**: Phase 1 — Safe Writes **COMPLETE** (v0.2.0 tagged). Phase 0 done. Phase 2 (drafting tools) next.
 **Last Updated**: 2026-07-06
 
 ---

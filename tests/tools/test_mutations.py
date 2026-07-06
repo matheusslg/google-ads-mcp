@@ -581,3 +581,55 @@ def test_add_negative_keywords_authentication_error_bubbles(
         add_negative_keywords(
             scope="campaign", target_id="5555", keywords=["shoes"], customer_id="1234567890"
         )
+
+
+# --- Universal dry_run audit (issue #11) ---
+
+
+def test_all_mutation_tools_accept_dry_run_kwarg() -> None:
+    """Every mutation tool must accept `dry_run: bool = False` (PRD line 120)."""
+    import inspect
+    import typing
+    from collections.abc import Callable
+    from typing import Any
+
+    from google_ads_mcp.tools import mutations
+
+    tools: list[Callable[..., Any]] = [
+        mutations.pause_campaign,
+        mutations.enable_campaign,
+        mutations.update_campaign_budget,
+        mutations.update_keyword_bid,
+        mutations.add_negative_keywords,
+    ]
+    for tool in tools:
+        sig = inspect.signature(tool)
+        assert "dry_run" in sig.parameters, f"{tool.__name__} missing dry_run kwarg"
+        assert sig.parameters["dry_run"].default is False, (
+            f"{tool.__name__}.dry_run default != False"
+        )
+        hints = typing.get_type_hints(tool)
+        assert hints.get("dry_run") is bool, f"{tool.__name__}.dry_run not typed as bool"
+
+
+def test_all_mutation_tools_return_mutation_response() -> None:
+    """Every mutation tool returns MutationResponse."""
+    import typing
+    from collections.abc import Callable
+    from typing import Any
+
+    from google_ads_mcp.tools import mutations
+    from google_ads_mcp.tools.mutations import MutationResponse
+
+    tools: list[Callable[..., Any]] = [
+        mutations.pause_campaign,
+        mutations.enable_campaign,
+        mutations.update_campaign_budget,
+        mutations.update_keyword_bid,
+        mutations.add_negative_keywords,
+    ]
+    for tool in tools:
+        hints = typing.get_type_hints(tool)
+        assert hints.get("return") is MutationResponse, (
+            f"{tool.__name__} return type is not MutationResponse"
+        )

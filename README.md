@@ -3,7 +3,7 @@
 > Workflow-shaped MCP server exposing the Google Ads API to AI agents
 > with built-in safety rails for mutations.
 
-**Status**: v0.1.0 — MVP Read-Only. Nine read tools + workflow-shaped audit + narrative summary. Phase 1 (safe writes) is next; see [open issues](https://github.com/matheusslg/google-ads-mcp/issues) for the roadmap.
+**Status**: v0.2.0 — Read + Safe Writes. Nine read tools + five guardrailed mutation tools with universal `dry_run` support. See [open issues](https://github.com/matheusslg/google-ads-mcp/issues) for the roadmap (Phase 2 drafting tools next).
 
 ## Install
 
@@ -62,6 +62,8 @@ Read-only. Every tool that operates on a customer accepts `customer_id?: str` (1
 
 Response payloads are capped at 10,000 rows per call; a `warnings: ["truncated at 10000 rows; refine filters to see more"]` entry is returned if the cap is hit.
 
+**Mutations (v0.2.0+)** — see the Safety model section below. All accept `dry_run: bool = False` and return a `MutationResponse` envelope. Budget/bid updates enforce numeric guardrails and refuse over-cap requests without calling the API.
+
 ## First-call example
 
 Once setup has run and Claude Desktop is configured:
@@ -74,7 +76,20 @@ Then ask *"Summarize last week's performance"* → Claude calls `summarize_perfo
 
 ## Safety model
 
-v0.1.0 is **read-only** — no mutation tools ship yet. Phase 1 (issues #8–#11) will add mutations, each with `dry_run: bool = False` and at least one numeric guardrail (`max_increase_percent`, `absolute_cap`, or `max_bid_cap`); default cap `max_increase_percent: 50` when omitted. Contract details in [`PRD.md`](PRD.md) (Design System) and [`standards.md`](standards.md).
+Every mutation tool ships with `dry_run: bool = False` and returns a `MutationResponse` envelope: `{success, dry_run, mutation_id?, before, after, warnings}`. `dry_run=True` **never** calls the Google Ads API — it returns the projected `after` state only, giving callers (and AI agents) a preview before committing real changes.
+
+**Mutation tools (v0.2.0)** — all read-only surface plus:
+
+- `pause_campaign` / `enable_campaign` — no-op detection: if the campaign is already at the target state, no API call is made and a warning surfaces
+- `update_campaign_budget(campaign_id, new_amount, max_increase_percent?, absolute_cap?)` — refuses (returns `success=False`, no API call) if the new amount would exceed either cap. **When both guardrails are omitted, defaults to `max_increase_percent=50`** (per PRD § Risks mitigation).
+- `update_keyword_bid(ad_group_id, criterion_id, new_bid, max_bid_cap?)` — when `max_bid_cap` is omitted, defaults to `current × 1.5` (equivalent 50% ceiling). Refuses if the new bid exceeds the cap.
+- `add_negative_keywords(scope, target_id, keywords, match_type?)` — pre-checks existing negatives at the target; duplicates are skipped as warnings, not errors. Batched into a single mutate call.
+
+Refusal is signalled by `success=False` in the envelope; the `warnings` list explains why. No exceptions are raised on caller mistakes (bad IDs raise `ValueError`; auth issues raise `CredentialsRevoked`).
+
+Universal `dry_run` contract is pinned by an automated test that fails if any future mutation tool omits the kwarg or changes the return envelope.
+
+Contract details in [`PRD.md`](PRD.md) (Design System) and [`standards.md`](standards.md).
 
 ## Development
 
