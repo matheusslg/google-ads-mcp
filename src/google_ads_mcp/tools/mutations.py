@@ -138,9 +138,15 @@ def _check_guardrails(
     warnings: list[str] = []
     allowed = True
 
-    if max_increase_percent is None and absolute_cap is None:
+    # Default cap kicks in only when both are omitted. The user-facing warning
+    # only surfaces if the cap will actually be evaluated — i.e. on increases.
+    # Decreases are always allowed regardless, so mentioning a percent cap
+    # would be misleading noise (issue #35).
+    defaulted = max_increase_percent is None and absolute_cap is None
+    if defaulted:
         max_increase_percent = 50.0
-        warnings.append("default max_increase_percent=50 applied (no explicit cap supplied)")
+        if new_dollars > current_dollars:
+            warnings.append("default max_increase_percent=50 applied (no explicit cap supplied)")
 
     if absolute_cap is not None and new_dollars > absolute_cap:
         allowed = False
