@@ -234,6 +234,21 @@ def test_update_budget_default_cap_applied_when_both_omitted(
     assert any("default max_increase_percent=50" in w for w in resp.warnings)
 
 
+def test_update_budget_decrease_no_default_cap_warning(
+    mock_google_ads_client: MagicMock,
+) -> None:
+    """Decreases don't emit the 'default max_increase_percent applied' warning (issue #35).
+
+    The cap doesn't govern decreases; surfacing it there is misleading noise.
+    """
+    mock_google_ads_client.get_service.return_value.search_stream.return_value = (
+        _stream_with_budget(50_000_000)
+    )
+    resp = update_campaign_budget(campaign_id="5555", new_amount=10.0, dry_run=True)
+    assert resp.success is True
+    assert not any("default max_increase_percent" in w for w in resp.warnings)
+
+
 def test_update_budget_over_percent_refused(mock_google_ads_client: MagicMock) -> None:
     mock_google_ads_client.get_service.return_value.search_stream.return_value = (
         _stream_with_budget(50_000_000)
