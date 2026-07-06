@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import json
 import sys
-import traceback
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from google_ads_mcp.tools.audits import (
     audit_account_health,
