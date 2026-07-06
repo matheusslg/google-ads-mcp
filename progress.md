@@ -4,7 +4,7 @@
 > **Keep this file under 400 lines** - archive old sessions to `.claude/session-archive/`
 
 ## Current Status
-**Phase**: Phase 1 — Safe Writes **COMPLETE** (v0.2.0 tagged). Phase 0 done. Phase 2 (drafting tools) next.
+**Phase**: **ALL PHASES COMPLETE** — v1.0.0 released. Phase 0 (read tools), Phase 1 (safe writes), Phase 2 (drafting), Phase 3 (CI + smoke playbook) all shipped.
 **Last Updated**: 2026-07-06
 
 ---

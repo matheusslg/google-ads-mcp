@@ -3,7 +3,7 @@
 > Workflow-shaped MCP server exposing the Google Ads API to AI agents
 > with built-in safety rails for mutations.
 
-**Status**: v0.3.0 — Read + Safe Writes + Drafting. Nine read tools, five guardrailed mutation tools with universal `dry_run` support, plus three drafting tools (`draft_campaign_csv`, `draft_responsive_search_ad`, `dry_run_changes` multi-step preview). See [open issues](https://github.com/matheusslg/google-ads-mcp/issues) for the roadmap (Phase 3 v1.0.0 hardening next).
+**Status**: v1.0.0 — Stable. Nine read tools, five guardrailed mutation tools with universal `dry_run` support, plus three drafting tools (`draft_campaign_csv`, `draft_responsive_search_ad`, `dry_run_changes` multi-step preview). See [open issues](https://github.com/matheusslg/google-ads-mcp/issues) for the roadmap (Phase 3 v1.0.0 hardening next).
 
 ## Install
 
