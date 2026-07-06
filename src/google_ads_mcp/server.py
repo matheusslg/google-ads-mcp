@@ -2,9 +2,7 @@
 
 import sys
 
-from fastmcp import FastMCP
-
-mcp: FastMCP = FastMCP("google-ads-mcp")
+from google_ads_mcp._mcp import mcp
 
 
 @mcp.tool
@@ -27,3 +25,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+# Register tools by importing modules that use @mcp.tool decorators.
+from google_ads_mcp.tools import reads  # noqa: F401, E402
