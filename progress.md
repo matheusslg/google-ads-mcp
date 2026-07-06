@@ -9,6 +9,16 @@
 
 ---
 
+### Session 10 (2026-07-06)
+**Focus**: Issue #6 — analytical / audit tools (autonomous)
+**Completed**:
+- `src/google_ads_mcp/tools/audits.py` — `find_negative_keyword_candidates` (ranked by cost desc, English reasoning per candidate) + `audit_account_health` (5 checks: disapproved ads, low quality scores, budget pacing, missing conversion tracking, paused-but-still-spending; overall status derived from worst)
+- Promoted `_DURATION_DAYS` → public `PERIOD_DAYS` in `reports.py` (needed by pacing check); added THIS_MONTH/LAST_MONTH as nominal 30-day approximations
+- 18 new tests → 65 total; ruff/mypy strict clean; 2 commits
+**Judgment calls**: check helpers drop `_search` truncation warnings (return type has no room; 10k cap unlikely to matter for audit scans); pacing aggregates cost per-campaign in Python defensively
+**Branch**: `feat/issue-6-audit-tools`
+**Next (autonomous)**: #7 v0.1.0 release — README polish + tag + draft GitHub Release. Manual smoke against real Test Account left for user.
+
 ### Session 9 (2026-07-06)
 **Focus**: Issue #5 — performance reporting tools (autonomous under `/goal`)
 **Completed**:
@@ -135,8 +145,8 @@
 > Keep only the last 5 sessions in this file for AI readability.
 
 ## In Progress
-- `feat/issue-5-reporting-tools` branch — impl complete; PR pending
-- Autonomous MVP wrap: #4 (done) → #5 (this) → #6 → #7 v0.1.0
+- `feat/issue-6-audit-tools` branch — impl complete; PR pending
+- Autonomous MVP wrap: #4 (done) → #5 (done) → #6 (this) → #7 v0.1.0
 
 ## Next Session Should
 - [ ] Merge #4 PR when open
