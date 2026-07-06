@@ -11,6 +11,7 @@ from google_ads_mcp.auth import CredentialsRevoked
 from google_ads_mcp.tools.mutations import (
     MutationResponse,
     _check_guardrails,
+    add_negative_keywords,
     enable_campaign,
     pause_campaign,
     update_campaign_budget,
@@ -371,3 +372,212 @@ def test_update_bid_current_zero_uses_new_as_baseline(mock_google_ads_client: Ma
     resp = update_keyword_bid(ad_group_id="111", criterion_id="42", new_bid=0.50)
     assert resp.success is False
     assert any("exceeds max_bid_cap" in w for w in resp.warnings)
+
+
+def _campaign_negative_row(text: str, match_type: str) -> MagicMock:
+    row = MagicMock()
+    row.campaign_criterion.keyword.text = text
+    row.campaign_criterion.keyword.match_type.name = match_type
+    return row
+
+
+def _ad_group_negative_row(text: str, match_type: str) -> MagicMock:
+    row = MagicMock()
+    row.ad_group_criterion.keyword.text = text
+    row.ad_group_criterion.keyword.match_type.name = match_type
+    return row
+
+
+def _existing_negatives_stream(rows: list[MagicMock]) -> list[MagicMock]:
+    batch = MagicMock()
+    batch.results = rows
+    return [batch]
+
+
+def _program_criteria_mutation_response(
+    mock_client: MagicMock, method: str, resource_names: list[str]
+) -> None:
+    results = []
+    for rn in resource_names:
+        result = MagicMock()
+        result.resource_name = rn
+        results.append(result)
+    resp = MagicMock()
+    resp.results = results
+    getattr(mock_client.get_service.return_value, method).return_value = resp
+
+
+def test_add_negative_keywords_ad_group_scope_dry_run(mock_google_ads_client: MagicMock) -> None:
+    mock_google_ads_client.get_service.return_value.search_stream.return_value = []
+    resp = add_negative_keywords(
+        scope="ad_group",
+        target_id="111",
+        keywords=["shoes", "boots"],
+        customer_id="1234567890",
+        dry_run=True,
+    )
+    assert resp.success is True
+    assert resp.dry_run is True
+    assert resp.mutation_id is None
+    mock_google_ads_client.get_service.return_value.mutate_ad_group_criteria.assert_not_called()
+    assert resp.after["added_count"] == "2"
+    assert resp.after["added_keywords"] == "shoes, boots"
+
+
+def test_add_negative_keywords_campaign_scope_dry_run(mock_google_ads_client: MagicMock) -> None:
+    mock_google_ads_client.get_service.return_value.search_stream.return_value = []
+    resp = add_negative_keywords(
+        scope="campaign",
+        target_id="5555",
+        keywords=["shoes", "boots"],
+        customer_id="1234567890",
+        dry_run=True,
+    )
+    assert resp.success is True
+    assert resp.dry_run is True
+    assert resp.mutation_id is None
+    mock_google_ads_client.get_service.return_value.mutate_campaign_criteria.assert_not_called()
+    assert resp.after["added_count"] == "2"
+
+
+def test_add_negative_keywords_real_mutation_ad_group(mock_google_ads_client: MagicMock) -> None:
+    mock_google_ads_client.get_service.return_value.search_stream.return_value = []
+    _program_criteria_mutation_response(
+        mock_google_ads_client,
+        "mutate_ad_group_criteria",
+        ["customers/1234567890/adGroupCriteria/7777~1111"],
+    )
+    resp = add_negative_keywords(
+        scope="ad_group", target_id="7777", keywords=["shoes"], customer_id="1234567890"
+    )
+    assert resp.success is True
+    assert resp.dry_run is False
+    assert resp.mutation_id == "customers/1234567890/adGroupCriteria/7777~1111"
+    mutate_call = mock_google_ads_client.get_service.return_value.mutate_ad_group_criteria
+    mutate_call.assert_called_once()
+    ops = mutate_call.call_args.kwargs["operations"]
+    assert len(ops) == 1
+    assert ops[0].create.keyword.text == "shoes"
+    assert ops[0].create.negative is True
+    assert ops[0].create.ad_group == "customers/1234567890/adGroups/7777"
+
+
+def test_add_negative_keywords_real_mutation_campaign(mock_google_ads_client: MagicMock) -> None:
+    mock_google_ads_client.get_service.return_value.search_stream.return_value = []
+    _program_criteria_mutation_response(
+        mock_google_ads_client,
+        "mutate_campaign_criteria",
+        [
+            "customers/1234567890/campaignCriteria/5555~1111",
+            "customers/1234567890/campaignCriteria/5555~2222",
+        ],
+    )
+    resp = add_negative_keywords(
+        scope="campaign",
+        target_id="5555",
+        keywords=["shoes", "boots"],
+        customer_id="1234567890",
+    )
+    assert resp.success is True
+    assert resp.mutation_id == "customers/1234567890/campaignCriteria/5555~1111"
+    assert resp.after["resource_names"] == (
+        "customers/1234567890/campaignCriteria/5555~1111, "
+        "customers/1234567890/campaignCriteria/5555~2222"
+    )
+    mutate_call = mock_google_ads_client.get_service.return_value.mutate_campaign_criteria
+    mutate_call.assert_called_once()
+    assert len(mutate_call.call_args.kwargs["operations"]) == 2
+
+
+def test_add_negative_keywords_skips_duplicates(mock_google_ads_client: MagicMock) -> None:
+    mock_google_ads_client.get_service.return_value.search_stream.return_value = (
+        _existing_negatives_stream([_campaign_negative_row("shoes", "EXACT")])
+    )
+    resp = add_negative_keywords(
+        scope="campaign",
+        target_id="5555",
+        keywords=["shoes", "boots"],
+        customer_id="1234567890",
+        dry_run=True,
+    )
+    assert resp.success is True
+    assert resp.after["added_count"] == "1"
+    assert resp.after["skipped_count"] == "1"
+    assert resp.after["added_keywords"] == "boots"
+    assert resp.after["skipped_keywords"] == "shoes"
+    assert any("'shoes' with match_type=EXACT already exists; skipped" in w for w in resp.warnings)
+
+
+def test_add_negative_keywords_dedupes_input(mock_google_ads_client: MagicMock) -> None:
+    mock_google_ads_client.get_service.return_value.search_stream.return_value = []
+    resp = add_negative_keywords(
+        scope="campaign",
+        target_id="5555",
+        keywords=["shoes", "shoes", "boots"],
+        customer_id="1234567890",
+        dry_run=True,
+    )
+    assert resp.after["added_count"] == "2"
+    assert resp.after["added_keywords"] == "shoes, boots"
+
+
+def test_add_negative_keywords_match_type_broad(mock_google_ads_client: MagicMock) -> None:
+    # existing negative is EXACT-scoped; a BROAD request for the same text is not a duplicate
+    mock_google_ads_client.get_service.return_value.search_stream.return_value = (
+        _existing_negatives_stream([_ad_group_negative_row("shoes", "EXACT")])
+    )
+    _program_criteria_mutation_response(
+        mock_google_ads_client,
+        "mutate_ad_group_criteria",
+        ["customers/1234567890/adGroupCriteria/111~9999"],
+    )
+    resp = add_negative_keywords(
+        scope="ad_group",
+        target_id="111",
+        keywords=["shoes"],
+        customer_id="1234567890",
+        match_type="BROAD",
+    )
+    assert resp.after["added_count"] == "1"
+    assert resp.after["skipped_count"] == "0"
+    mock_google_ads_client.enums.KeywordMatchTypeEnum.__getitem__.assert_called_with("BROAD")
+    mutate_call = mock_google_ads_client.get_service.return_value.mutate_ad_group_criteria
+    op = mutate_call.call_args.kwargs["operations"][0]
+    assert (
+        op.create.keyword.match_type == mock_google_ads_client.enums.KeywordMatchTypeEnum["BROAD"]
+    )
+
+
+def test_add_negative_keywords_invalid_scope_raises(mock_google_ads_client: MagicMock) -> None:
+    with pytest.raises(ValueError, match="invalid scope"):
+        add_negative_keywords(
+            scope="invalid",  # type: ignore[arg-type]
+            target_id="5555",
+            keywords=["shoes"],
+            customer_id="1234567890",
+        )
+
+
+def test_add_negative_keywords_empty_input_returns_success_no_op(
+    mock_google_ads_client: MagicMock,
+) -> None:
+    resp = add_negative_keywords(
+        scope="campaign", target_id="5555", keywords=[], customer_id="1234567890"
+    )
+    assert resp.success is True
+    assert resp.mutation_id is None
+    assert "no new keywords to add" in resp.warnings
+    mock_google_ads_client.get_service.return_value.search_stream.assert_not_called()
+    mock_google_ads_client.get_service.return_value.mutate_campaign_criteria.assert_not_called()
+
+
+def test_add_negative_keywords_authentication_error_bubbles(
+    mock_google_ads_client: MagicMock,
+) -> None:
+    mock_google_ads_client.get_service.return_value.search_stream.side_effect = (
+        _make_google_ads_exception(auth=True)
+    )
+    with pytest.raises(CredentialsRevoked):
+        add_negative_keywords(
+            scope="campaign", target_id="5555", keywords=["shoes"], customer_id="1234567890"
+        )
