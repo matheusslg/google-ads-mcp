@@ -16,8 +16,11 @@ from google_ads_mcp._mcp import mcp
 from google_ads_mcp.auth import (
     CredentialsRevoked,
     get_default_customer_id,
-    get_google_ads_client,
 )
+
+# re-exported (import-as-itself): mutations.py calls `reads.get_google_ads_client()` so
+# tests can monkeypatch this module's attribute.
+from google_ads_mcp.auth import get_google_ads_client as get_google_ads_client
 
 _MAX_ROWS = 10_000
 _TRUNCATED_WARNING = f"truncated at {_MAX_ROWS} rows; refine filters to see more"
