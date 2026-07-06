@@ -4,10 +4,24 @@
 > **Keep this file under 400 lines** - archive old sessions to `.claude/session-archive/`
 
 ## Current Status
-**Phase**: Phase 0 — MVP Read-Only (in progress)
-**Last Updated**: 2026-06-03
+**Phase**: Phase 0 — MVP Read-Only (in progress; #4 done, #5–#7 remaining)
+**Last Updated**: 2026-07-06
 
 ---
+
+### Session 8 (2026-07-06)
+**Focus**: Issue #4 — read-only listing tools (autonomous execution under user `/goal` directive to wrap up MVP)
+**Completed**:
+- Basic Access approved by Google 2026-07-06; recorded in `docs/developer-token.md` (PR #22 merged)
+- `src/google_ads_mcp/_mcp.py` — shared FastMCP instance to break circular import between `server.py` and `tools/reads.py`
+- `src/google_ads_mcp/tools/reads.py` — 4 read tools (`list_accessible_customers`, `list_campaigns`, `list_ad_groups`, `list_keywords`) with Pydantic response envelopes, 10k row cap + truncation warning, `_search` GAQL helper, `_raise_friendly` bridge mapping `GoogleAdsException` auth codes to `CredentialsRevoked` (closes the deferral from #3's spec)
+- `src/google_ads_mcp/server.py` — imports `mcp` from `_mcp`; registers tools via `from google_ads_mcp.tools import reads` at bottom
+- `tests/conftest.py` — `mock_google_ads_client` fixture (patches `get_google_ads_client` + `get_default_customer_id` in `tools.reads`)
+- `tests/tools/test_reads.py` — 18 tests: 8 for helpers (`_resolve_customer_id`, `_raise_friendly`, `_search` truncation + error mapping) + 10 for the 4 tools (envelope shape, WHERE-clause filters, `default_customer_id` fallback, resource-name parsing)
+- All gates clean: 36 tests, ruff, mypy strict
+- Spec at `docs/specs/2026-07-06-issue-4-read-tools-design.md`; plan at `docs/plans/2026-07-06-issue-4-read-tools-plan.md`
+**Branch**: `feat/issue-4-read-tools`
+**Next (autonomous)**: brainstorm + implement #5 (performance reporting), then #6 (audit tools), then #7 (v0.1.0 release prep).
 
 ### Session 7 (2026-06-03)
 **Focus**: Issue #3 — implement OAuth2 setup helper + credential management
@@ -110,12 +124,14 @@
 > Keep only the last 5 sessions in this file for AI readability.
 
 ## In Progress
-- None — PR #20 (#3) merged. Issue #2 still open pending Google compliance team response.
+- `feat/issue-4-read-tools` branch — impl complete; PR pending
+- Autonomous MVP wrap: #4 (this) → #5 → #6 → #7 v0.1.0
 
 ## Next Session Should
-- [ ] Check `cavallini.matheus34@gmail.com` for Google compliance team's response on #2
-- [ ] Brainstorm + implement #4 (read-only listing tools) against the Test Account
-- [ ] Create a Test Account if not already done (`ads.google.com` → Accounts → `+` → Create test account)
+- [ ] Merge #4 PR when open
+- [ ] #5 (performance reporting: `get_performance`, `list_search_terms`, `summarize_performance`)
+- [ ] #6 (audit tools: `find_negative_keyword_candidates`, `audit_account_health`)
+- [ ] #7 (v0.1.0 release — smoke against real Test Account, tag, GitHub Release — user's hands for the smoke step)
 
 ## Decisions Made
 - **Ticketing platform**: GitHub Issues (matches MIT/OSS distribution model)
