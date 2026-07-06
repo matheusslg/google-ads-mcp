@@ -478,3 +478,90 @@ def update_keyword_bid(
         after=after,
         warnings=warnings,
     )
+
+
+# --- Multi-step dry-run preview (issue #14) ---
+
+
+class ChangeSetItem(BaseModel):
+    """One pending mutation in a change set.
+
+    `tool` names an existing mutation tool; `args` are its kwargs. `dry_run`
+    inside args is ignored — `dry_run_changes` always forces True.
+    """
+
+    tool: Literal[
+        "pause_campaign",
+        "enable_campaign",
+        "update_campaign_budget",
+        "update_keyword_bid",
+        "add_negative_keywords",
+    ]
+    args: dict[str, object] = {}
+
+
+class DryRunChangesResponse(BaseModel):
+    total_items: int
+    results: list[MutationResponse]
+    any_refused: bool
+    warnings: list[str] = []
+
+
+@mcp.tool
+def dry_run_changes(change_set: list[ChangeSetItem]) -> DryRunChangesResponse:
+    """Preview a multi-step change set by dry-running each item.
+
+    Every item is invoked with `dry_run=True` regardless of what's in its `args`.
+    Never calls the Google Ads mutation APIs. Returns the aggregated envelope so
+    a caller (or AI agent) can review projected before/after states across all
+    changes before committing any of them.
+
+    Args:
+        change_set: Ordered list of items. Each item's `tool` names a mutation
+            tool; `args` are that tool's kwargs (customer_id, campaign_id, etc.).
+
+    Returns per-item MutationResponses + `any_refused` set True if any single
+    item was rejected (e.g. over-cap guardrail refusal). Guardrail-refused items
+    still appear in `results` with `success=False`.
+    """
+    from collections.abc import Callable
+    from typing import Any
+
+    tool_map: dict[str, Callable[..., MutationResponse]] = {
+        "pause_campaign": pause_campaign,
+        "enable_campaign": enable_campaign,
+        "update_campaign_budget": update_campaign_budget,
+        "update_keyword_bid": update_keyword_bid,
+        "add_negative_keywords": add_negative_keywords,
+    }
+    _ = Any  # keep import used
+    del _
+    results: list[MutationResponse] = []
+    warnings: list[str] = []
+    any_refused = False
+
+    for i, item in enumerate(change_set):
+        tool_fn = tool_map[item.tool]
+        # Force dry_run=True; drop any caller-supplied value
+        args = {k: v for k, v in item.args.items() if k != "dry_run"}
+        args["dry_run"] = True
+        try:
+            resp = tool_fn(**args)
+        except (ValueError, TypeError) as e:
+            # Bad args or missing target — record as a synthetic refusal
+            resp = MutationResponse(
+                success=False,
+                dry_run=True,
+                warnings=[f"item #{i + 1} ({item.tool}) raised {type(e).__name__}: {e}"],
+            )
+            warnings.append(f"item #{i + 1} failed pre-flight: {e}")
+        results.append(resp)
+        if not resp.success:
+            any_refused = True
+
+    return DryRunChangesResponse(
+        total_items=len(change_set),
+        results=results,
+        any_refused=any_refused,
+        warnings=warnings,
+    )

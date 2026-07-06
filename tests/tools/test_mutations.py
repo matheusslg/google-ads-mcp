@@ -633,3 +633,79 @@ def test_all_mutation_tools_return_mutation_response() -> None:
         assert hints.get("return") is MutationResponse, (
             f"{tool.__name__} return type is not MutationResponse"
         )
+
+
+# --- dry_run_changes (issue #14) ---
+
+
+def test_dry_run_changes_returns_per_item_response(mock_google_ads_client: MagicMock) -> None:
+    from google_ads_mcp.tools.mutations import ChangeSetItem, dry_run_changes
+
+    mock_google_ads_client.get_service.return_value.search_stream.return_value = (
+        _stream_with_status("ENABLED")
+    )
+    resp = dry_run_changes(
+        [
+            ChangeSetItem(
+                tool="pause_campaign", args={"campaign_id": "5555", "customer_id": "1234567890"}
+            ),
+        ]
+    )
+    assert resp.total_items == 1
+    assert len(resp.results) == 1
+    assert resp.results[0].dry_run is True
+    assert resp.any_refused is False
+
+
+def test_dry_run_changes_forces_dry_run_true(mock_google_ads_client: MagicMock) -> None:
+    """Even if caller sets dry_run=False in args, dry_run_changes forces True."""
+    from google_ads_mcp.tools.mutations import ChangeSetItem, dry_run_changes
+
+    mock_google_ads_client.get_service.return_value.search_stream.return_value = (
+        _stream_with_status("ENABLED")
+    )
+    resp = dry_run_changes(
+        [
+            ChangeSetItem(
+                tool="pause_campaign",
+                args={"campaign_id": "5555", "customer_id": "1234567890", "dry_run": False},
+            ),
+        ]
+    )
+    # mutate_campaigns must NOT have been called
+    assert mock_google_ads_client.get_service.return_value.mutate_campaigns.call_count == 0
+    assert resp.results[0].dry_run is True
+
+
+def test_dry_run_changes_flags_any_refused_on_over_cap(mock_google_ads_client: MagicMock) -> None:
+    from google_ads_mcp.tools.mutations import ChangeSetItem, dry_run_changes
+
+    mock_google_ads_client.get_service.return_value.search_stream.return_value = (
+        _stream_with_budget(50_000_000)
+    )
+    resp = dry_run_changes(
+        [
+            ChangeSetItem(
+                tool="update_campaign_budget",
+                args={"campaign_id": "5555", "new_amount": 200.0, "customer_id": "1234567890"},
+            ),
+        ]
+    )
+    assert resp.any_refused is True
+    assert resp.results[0].success is False
+
+
+def test_dry_run_changes_captures_pre_flight_errors(mock_google_ads_client: MagicMock) -> None:
+    from google_ads_mcp.tools.mutations import ChangeSetItem, dry_run_changes
+
+    mock_google_ads_client.get_service.return_value.search_stream.return_value = []
+    resp = dry_run_changes(
+        [
+            ChangeSetItem(
+                tool="pause_campaign", args={"campaign_id": "5555", "customer_id": "1234567890"}
+            ),
+        ]
+    )
+    assert resp.any_refused is True
+    assert resp.results[0].success is False
+    assert "failed pre-flight" in resp.warnings[0]
