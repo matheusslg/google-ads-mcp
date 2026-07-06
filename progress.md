@@ -110,11 +110,9 @@
 > Keep only the last 5 sessions in this file for AI readability.
 
 ## In Progress
-- `feat/issue-3-oauth-setup` branch — implementation complete; PR open awaiting review
-- Issue #2 — still open pending Google compliance team response
+- None — PR #20 (#3) merged. Issue #2 still open pending Google compliance team response.
 
 ## Next Session Should
-- [ ] Merge PR for #3
 - [ ] Check `cavallini.matheus34@gmail.com` for Google compliance team's response on #2
 - [ ] Brainstorm + implement #4 (read-only listing tools) against the Test Account
 - [ ] Create a Test Account if not already done (`ads.google.com` → Accounts → `+` → Create test account)
