@@ -244,6 +244,162 @@ def update_campaign_budget(
     )
 
 
+_NegativeScope = Literal["campaign", "ad_group"]
+_NegativeMatchType = Literal["EXACT", "PHRASE", "BROAD"]
+
+
+def _fetch_existing_negatives(cid: str, scope: str, target_id: str) -> set[tuple[str, str]]:
+    """Return the set of (lowercased text, match_type name) already negative at scope."""
+    if scope == "campaign":
+        query = (
+            "SELECT campaign_criterion.keyword.text, campaign_criterion.keyword.match_type "
+            "FROM campaign_criterion "
+            f"WHERE campaign.id = {target_id} AND campaign_criterion.negative = TRUE "
+            "AND campaign_criterion.type = 'KEYWORD'"
+        )
+    else:
+        query = (
+            "SELECT ad_group_criterion.keyword.text, ad_group_criterion.keyword.match_type "
+            "FROM ad_group_criterion "
+            f"WHERE ad_group_criterion.ad_group = 'customers/{cid}/adGroups/{target_id}' "
+            "AND ad_group_criterion.negative = TRUE AND ad_group_criterion.type = 'KEYWORD'"
+        )
+    rows, _ = _search(cid, query)
+    existing: set[tuple[str, str]] = set()
+    for row in rows:
+        crit = row.campaign_criterion if scope == "campaign" else row.ad_group_criterion
+        existing.add((crit.keyword.text.strip().lower(), crit.keyword.match_type.name))
+    return existing
+
+
+def _dedupe_and_filter(
+    keywords: list[str], match_type: str, existing: set[tuple[str, str]]
+) -> tuple[list[str], list[str], list[str]]:
+    """Dedupe `keywords` case-insensitively (keep first occurrence), then split
+    against `existing`. Returns (to_add, skipped, warnings) — original casing preserved
+    in to_add/skipped; warnings holds one message per skip.
+    """
+    seen: set[str] = set()
+    to_add: list[str] = []
+    skipped: list[str] = []
+    warnings: list[str] = []
+    for kw in keywords:
+        key = kw.strip().lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        if (key, match_type) in existing:
+            skipped.append(kw)
+            warnings.append(f"'{kw}' with match_type={match_type} already exists; skipped")
+        else:
+            to_add.append(kw)
+    return to_add, skipped, warnings
+
+
+def _mutate_negatives(
+    cid: str, scope: str, target_id: str, keywords: list[str], match_type: str
+) -> list[str]:
+    """Create N negative-keyword criteria in one mutate call; return their resource names."""
+    client = reads.get_google_ads_client()
+    operations = []
+
+    if scope == "campaign":
+        service = client.get_service("CampaignCriterionService")
+        for kw in keywords:
+            crit = client.get_type("CampaignCriterion")
+            crit.campaign = f"customers/{cid}/campaigns/{target_id}"
+            crit.negative = True
+            crit.keyword.text = kw
+            crit.keyword.match_type = client.enums.KeywordMatchTypeEnum[match_type]
+            op = client.get_type("CampaignCriterionOperation")
+            op.create = crit
+            operations.append(op)
+        try:
+            response = service.mutate_campaign_criteria(customer_id=cid, operations=operations)
+        except GoogleAdsException as e:
+            _raise_friendly(e)
+    else:
+        service = client.get_service("AdGroupCriterionService")
+        for kw in keywords:
+            crit = client.get_type("AdGroupCriterion")
+            crit.ad_group = f"customers/{cid}/adGroups/{target_id}"
+            crit.negative = True
+            crit.keyword.text = kw
+            crit.keyword.match_type = client.enums.KeywordMatchTypeEnum[match_type]
+            op = client.get_type("AdGroupCriterionOperation")
+            op.create = crit
+            operations.append(op)
+        try:
+            response = service.mutate_ad_group_criteria(customer_id=cid, operations=operations)
+        except GoogleAdsException as e:
+            _raise_friendly(e)
+
+    return [result.resource_name for result in response.results]
+
+
+@mcp.tool
+def add_negative_keywords(
+    scope: _NegativeScope,
+    target_id: str,
+    keywords: list[str],
+    customer_id: str | None = None,
+    match_type: _NegativeMatchType = "EXACT",
+    dry_run: bool = False,
+) -> MutationResponse:
+    """Add negative keywords at a campaign or ad_group scope.
+
+    Args:
+        scope: Where the negatives live. "campaign" applies globally to the campaign;
+            "ad_group" applies only within that ad group.
+        target_id: campaign_id or ad_group_id depending on scope.
+        keywords: List of keyword texts (case-insensitive; deduped within the call).
+        customer_id: 10-digit ID; defaults to `default_customer_id`.
+        match_type: EXACT, PHRASE, or BROAD. Applied to all keywords in this call.
+        dry_run: When True, preview what would be added without calling the API.
+
+    Returns MutationResponse with added/skipped counts and keyword lists in `after`.
+    Existing negatives at that scope are skipped (surfaced as warnings, not errors).
+    """
+    if scope not in ("campaign", "ad_group"):
+        raise ValueError(f"invalid scope {scope!r}; expected 'campaign' or 'ad_group'")
+
+    cid = _resolve_customer_id(customer_id)
+
+    if not keywords:
+        return MutationResponse(success=True, warnings=["no new keywords to add"])
+
+    existing = _fetch_existing_negatives(cid, scope, target_id)
+    added_keywords, skipped_keywords, warnings = _dedupe_and_filter(keywords, match_type, existing)
+    before = {"existing_count": str(len(existing))}
+    after = {
+        "added_count": str(len(added_keywords)),
+        "skipped_count": str(len(skipped_keywords)),
+        "added_keywords": ", ".join(added_keywords),
+        "skipped_keywords": ", ".join(skipped_keywords),
+    }
+
+    if not added_keywords:
+        warnings.append("no new keywords to add")
+        return MutationResponse(success=True, before=before, after=after, warnings=warnings)
+
+    if dry_run:
+        return MutationResponse(
+            success=True, dry_run=True, before=before, after=after, warnings=warnings
+        )
+
+    resource_names = _mutate_negatives(cid, scope, target_id, added_keywords, match_type)
+    after["resource_names"] = ", ".join(resource_names)
+
+    return MutationResponse(
+        success=True,
+        dry_run=False,
+        mutation_id=resource_names[0],
+        before=before,
+        after=after,
+        warnings=warnings,
+    )
+
+
 @mcp.tool
 def update_keyword_bid(
     ad_group_id: str,
