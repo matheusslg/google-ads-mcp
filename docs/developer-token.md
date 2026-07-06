@@ -159,6 +159,7 @@ If rejected with a specific reason, address the reason directly and reapply. If 
 | Applicant | Cavallini Imóveis (`https://cavalliniimoveis.com.br/`) |
 | Maintainer GitHub | `matheusslg` |
 | Submission date | 2026-05-19 |
-| Current tier | Test Account (Basic Access pending) |
+| Approval date | 2026-06-03 |
+| Current tier | **Basic Access** (approved) |
 
 Authoritative current status lives in [`progress.md`](../progress.md).
