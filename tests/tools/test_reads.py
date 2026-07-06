@@ -53,8 +53,27 @@ def test_resolve_customer_id_falls_back_to_default(monkeypatch: pytest.MonkeyPat
 
 
 def test_raise_friendly_maps_authentication_error_to_credentials_revoked() -> None:
-    with pytest.raises(CredentialsRevoked, match="Refresh token may be revoked"):
+    with pytest.raises(CredentialsRevoked, match="refresh token is invalid or revoked"):
         _raise_friendly(_make_google_ads_exception(auth=True))
+
+
+def test_raise_friendly_propagates_authorization_error() -> None:
+    """authorization_error is a permission/scope issue, NOT a broken-token issue.
+
+    Should propagate as GoogleAdsException so the caller sees the real message
+    (e.g. "user doesn't have permission to access customer"), not misleading
+    "re-run setup" guidance.
+    """
+    err = MagicMock()
+    err.error_code.authentication_error = 0
+    err.error_code.authorization_error = 1
+    err.message = "user permission denied"
+    failure = MagicMock()
+    failure.errors = [err]
+    exc = GoogleAdsException(None, None, failure, "req-1")
+    with pytest.raises(GoogleAdsException) as raised:
+        _raise_friendly(exc)
+    assert raised.value is exc
 
 
 def test_raise_friendly_reraises_non_auth_error() -> None:

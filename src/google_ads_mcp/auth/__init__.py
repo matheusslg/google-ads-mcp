@@ -25,7 +25,7 @@ REQUIRED_FIELDS: tuple[str, ...] = (
     "use_proto_plus",
 )
 
-_DEFAULT_API_VERSION = "v24"  # verify at scaffold time per spec § Verification
+_DEFAULT_API_VERSION = "v24"  # google-ads>=31 ships v24/v23/v22/v21 (per Context7 confirmation)
 
 
 class CredentialsError(Exception):

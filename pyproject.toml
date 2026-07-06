@@ -22,7 +22,7 @@ classifiers = [
 ]
 dependencies = [
     "fastmcp>=2.0",
-    "google-ads>=24,<25",
+    "google-ads>=31,<32",
     "google-auth>=2.0",
     "google-auth-oauthlib>=1.0",
 ]
