@@ -9,6 +9,17 @@
 
 ---
 
+### Session 9 (2026-07-06)
+**Focus**: Issue #5 — performance reporting tools (autonomous under `/goal`)
+**Completed**:
+- `src/google_ads_mcp/tools/reports.py` — `get_performance` (with `segment_by` for campaign/device/network/day), `list_search_terms` (with `min_impressions` filter, default 100), `summarize_performance` (narrative + `PeriodComparison` deltas)
+- `_format_delta`, `_format_narrative` (deterministic English, no LLM), `_compute_prior_period` (Python `datetime` math for the comparison period since GAQL has no "prior LAST_7_DAYS")
+- Reused `_search` / `_resolve_customer_id` / `_raise_friendly` from `.reads`; no conftest changes needed
+- 11 new tests → 47 total; ruff/mypy strict clean
+**Surprises resolved**: `metrics.average_cpc` returns micro-value despite lacking `_micros` suffix (Google API quirk); search-term match type lives at `segments.search_term_match_type` (not `search_term_view.status`); `PeriodComparison.delta_pct` uses a `MetricsDelta` model with float fields to avoid Pydantic rejecting fractional percentages assigned to int fields.
+**Branch**: `feat/issue-5-reporting-tools`
+**Next (autonomous)**: #6 (audit + negative keyword tools) → #7 v0.1.0 release.
+
 ### Session 8 (2026-07-06)
 **Focus**: Issue #4 — read-only listing tools (autonomous execution under user `/goal` directive to wrap up MVP)
 **Completed**:
@@ -124,8 +135,8 @@
 > Keep only the last 5 sessions in this file for AI readability.
 
 ## In Progress
-- `feat/issue-4-read-tools` branch — impl complete; PR pending
-- Autonomous MVP wrap: #4 (this) → #5 → #6 → #7 v0.1.0
+- `feat/issue-5-reporting-tools` branch — impl complete; PR pending
+- Autonomous MVP wrap: #4 (done) → #5 (this) → #6 → #7 v0.1.0
 
 ## Next Session Should
 - [ ] Merge #4 PR when open
