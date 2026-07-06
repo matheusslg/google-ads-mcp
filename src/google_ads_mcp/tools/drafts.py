@@ -175,6 +175,9 @@ _HEADLINES_EN = [
     "{product} Made Simple",
 ]
 
+# pt-br templates use gender/number-neutral phrasing on purpose (issue #34):
+# imperative verbs, invariant adjectives ("premium"), and noun phrases with
+# prepositions — no bare adjectives that must agree with the {product} noun.
 _HEADLINES_PT_BR = [
     "Compre {product}",
     "Melhor {product}",
@@ -188,8 +191,8 @@ _HEADLINES_PT_BR = [
     "Experimente {product}",
     "Promoção {product}",
     "Economize em {product}",
-    "Novo {product}",
-    "{product} rápido",
+    "Confira {product}",
+    "Entrega de {product}",
     "Só aqui: {product}",
 ]
 
@@ -200,8 +203,11 @@ _DESCRIPTIONS_EN = [
     "Shop {product} online. Great selection for {audience}, delivered fast.",
 ]
 
+# Descriptions also use gender/number-neutral phrasing — no adjectives that
+# must agree with {product} (e.g. "feito" was dropped since it agrees with the
+# noun's gender/number).
 _DESCRIPTIONS_PT_BR = [
-    "Descubra {product} feito para {audience}. Peça agora com entrega rápida.",
+    "Descubra {product} para {audience}. Peça agora com entrega rápida.",
     "{product} premium ao melhor preço. Ideal para {audience}. Compre hoje.",
     "A confiança de {audience}. Peça {product} com garantia de satisfação.",
     "Compre {product} online. Ótima seleção para {audience}, entrega rápida.",
