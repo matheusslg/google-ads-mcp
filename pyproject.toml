@@ -1,6 +1,6 @@
 [project]
 name = "google-ads-mcp"
-version = "0.0.1"
+version = "0.1.0"
 description = "Workflow-shaped MCP server exposing the Google Ads API to AI agents with built-in safety rails for mutations."
 readme = "README.md"
 requires-python = ">=3.11"

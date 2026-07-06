@@ -3,7 +3,7 @@
 > Workflow-shaped MCP server exposing the Google Ads API to AI agents
 > with built-in safety rails for mutations.
 
-**Status**: Pre-release (v0.0.1) — bootstrap skeleton only. See [open issues](https://github.com/matheusslg/google-ads-mcp/issues) for the roadmap.
+**Status**: v0.1.0 — MVP Read-Only. Nine read tools + workflow-shaped audit + narrative summary. Phase 1 (safe writes) is next; see [open issues](https://github.com/matheusslg/google-ads-mcp/issues) for the roadmap.
 
 ## Install
 
@@ -46,18 +46,35 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 
 Once the setup wizard above has run, the server reads credentials from `~/.config/google-ads-mcp/credentials.json` automatically. No additional environment variables are required.
 
-## First call example
+## Available tools (v0.1.0)
 
-While only the `ping` connectivity probe exists:
+Read-only. Every tool that operates on a customer accepts `customer_id?: str` (10 digits, no dashes) — omit to use the `default_customer_id` from `credentials.json`.
 
-> **You**: Call the `ping` tool on `google-ads-mcp`.
-> **Claude**: `→ ping() → {"ok": true}`
+**Discovery**
+- `ping()` — connectivity probe; returns `{"ok": true}`.
+- `list_accessible_customers()` — customer IDs the developer token can access.
 
-Real tools land in #4–#6.
+**Listings** — `list_campaigns(customer_id?, status?)`, `list_ad_groups(customer_id?, campaign_id?)`, `list_keywords(customer_id?, campaign_id?, ad_group_id?)`. Return Pydantic envelopes with typed rows + a `warnings` list.
+
+**Reporting** — `get_performance(customer_id?, date_range="LAST_7_DAYS", segment_by?)`, `list_search_terms(customer_id?, date_range="LAST_7_DAYS", min_impressions=100)`, `summarize_performance(customer_id?, date_range="LAST_7_DAYS", comparison_period?)` — the last one returns a plain-English narrative + `PeriodComparison` deltas.
+
+**Analytical / audit** — `find_negative_keyword_candidates(customer_id?, date_range="LAST_30_DAYS", min_impressions=50, min_cost=1.0, require_zero_conversions=True)`, `audit_account_health(customer_id?, date_range="LAST_7_DAYS")` — 5-check snapshot (disapproved ads, low quality scores, budget pacing, missing conversion tracking, paused-but-still-spending).
+
+Response payloads are capped at 10,000 rows per call; a `warnings: ["truncated at 10000 rows; refine filters to see more"]` entry is returned if the cap is hit.
+
+## First-call example
+
+Once setup has run and Claude Desktop is configured:
+
+1. Restart Claude Desktop so it picks up the MCP server.
+2. Ask Claude: *"What Google Ads customer IDs do I have access to?"*
+3. Claude will call `list_accessible_customers` and return your customer IDs.
+
+Then ask *"Summarize last week's performance"* → Claude calls `summarize_performance` with `date_range="LAST_7_DAYS"` and reads the narrative back in whatever language you were chatting in.
 
 ## Safety model
 
-Every mutation tool will ship with `dry_run: bool = False` and at least one guardrail (`max_increase_percent` or `absolute_cap`). Default cap is `max_increase_percent: 50` when both guardrails are omitted. Full documentation in #11. Contract details in [`PRD.md`](PRD.md) (Design System) and [`standards.md`](standards.md).
+v0.1.0 is **read-only** — no mutation tools ship yet. Phase 1 (issues #8–#11) will add mutations, each with `dry_run: bool = False` and at least one numeric guardrail (`max_increase_percent`, `absolute_cap`, or `max_bid_cap`); default cap `max_increase_percent: 50` when omitted. Contract details in [`PRD.md`](PRD.md) (Design System) and [`standards.md`](standards.md).
 
 ## Development
 

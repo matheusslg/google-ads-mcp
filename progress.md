@@ -4,10 +4,21 @@
 > **Keep this file under 400 lines** - archive old sessions to `.claude/session-archive/`
 
 ## Current Status
-**Phase**: Phase 0 — MVP Read-Only (in progress; #4 done, #5–#7 remaining)
+**Phase**: Phase 0 — MVP Read-Only **COMPLETE** (#4, #5, #6, #7 all merged). Awaiting user's Test-Account smoke + release publish, then Phase 1.
 **Last Updated**: 2026-07-06
 
 ---
+
+### Session 11 (2026-07-06)
+**Focus**: Issue #7 — v0.1.0 release prep (autonomous under `/goal`)
+**Completed**:
+- README polished: Status → v0.1.0, "Available tools (v0.1.0)" section replaces the "Real tools land in #4–#6" placeholder, "First-call example" is now a real Claude Desktop walkthrough, Safety model note explains v0.1.0 is read-only and mutations land in Phase 1
+- `pyproject.toml` version 0.0.1 → 0.1.0
+- All 65 tests still pass; ruff/mypy clean
+- v0.1.0 tag will be cut on `main` after PR merge; draft GitHub Release will be created but NOT published (awaits user's manual smoke against a real Test Account)
+**MVP status**: **all 4 acceptance issues complete** (#4, #5, #6, #7). Phase 0 done.
+**Branch**: `chore/release-v0.1.0`
+**Next**: User smokes against real Test Account → publishes the draft Release. Then #8 (Phase 1 mutations) is unblocked with Basic Access already approved.
 
 ### Session 10 (2026-07-06)
 **Focus**: Issue #6 — analytical / audit tools (autonomous)
@@ -145,8 +156,8 @@
 > Keep only the last 5 sessions in this file for AI readability.
 
 ## In Progress
-- `feat/issue-6-audit-tools` branch — impl complete; PR pending
-- Autonomous MVP wrap: #4 (done) → #5 (done) → #6 (this) → #7 v0.1.0
+- `chore/release-v0.1.0` branch — release prep; PR pending
+- User's Test-Account smoke + draft-release publish is the last MVP step
 
 ## Next Session Should
 - [ ] Merge #4 PR when open
