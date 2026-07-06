@@ -80,12 +80,18 @@ def _resolve_customer_id(customer_id: str | None) -> str:
 
 
 def _raise_friendly(e: GoogleAdsException) -> NoReturn:
-    """Map GoogleAdsException auth codes to CredentialsRevoked; otherwise re-raise."""
+    """Map real credential errors to CredentialsRevoked; propagate everything else.
+
+    Only `authentication_error` codes signal a broken token (refresh_token/dev_token invalid).
+    `authorization_error` codes (USER_PERMISSION_DENIED, DEVELOPER_TOKEN_NOT_APPROVED, etc.)
+    mean the token is fine but the caller lacks scope for that customer — the user's fix is
+    account/hierarchy config, not re-running setup. Propagating preserves the SDK's message.
+    """
     for err in e.failure.errors:
-        if err.error_code.authentication_error or err.error_code.authorization_error:
+        if err.error_code.authentication_error:
             raise CredentialsRevoked(
                 f"Authentication failed: {err.message}. "
-                "Refresh token may be revoked. Re-run `google-ads-mcp setup`."
+                "Your refresh token is invalid or revoked. Re-run `google-ads-mcp setup`."
             ) from e
     raise e
 
