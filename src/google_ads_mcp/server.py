@@ -27,4 +27,4 @@ if __name__ == "__main__":
     main()
 
 # Register tools by importing modules that use @mcp.tool decorators.
-from google_ads_mcp.tools import reads  # noqa: F401, E402
+from google_ads_mcp.tools import reads, reports  # noqa: F401, E402
