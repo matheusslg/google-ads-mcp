@@ -24,9 +24,20 @@ _METRICS_SELECT = (
     "metrics.conversions, metrics.ctr, metrics.average_cpc"
 )
 
-# Duration (in days) of the fixed-window enums. THIS_MONTH / LAST_MONTH are
-# calendar-based and handled separately in _compute_prior_period.
-_DURATION_DAYS: dict[str, int] = {"LAST_7_DAYS": 7, "LAST_14_DAYS": 14, "LAST_30_DAYS": 30}
+# Duration (in days) of each date-range enum. THIS_MONTH / LAST_MONTH are
+# calendar-based (variable length); _compute_prior_period handles their prior-period
+# math separately, but other callers (e.g. audits.py budget pacing) need *some* day
+# count, so they're approximated at 30.
+# ponytail: THIS_MONTH/LAST_MONTH -> 30 is a nominal approximation, not exact elapsed
+# days. Fine for the +/-20% pacing bands audits.py uses; tighten if a caller needs
+# precise calendar-day math.
+PERIOD_DAYS: dict[_DateRange, int] = {
+    "LAST_7_DAYS": 7,
+    "LAST_14_DAYS": 14,
+    "LAST_30_DAYS": 30,
+    "THIS_MONTH": 30,
+    "LAST_MONTH": 30,
+}
 
 
 class Metrics(BaseModel):
@@ -158,8 +169,8 @@ def _compute_prior_period(date_range: _DateRange, _today: date | None = None) ->
     Python and issued as an explicit `segments.date BETWEEN` query.
     """
     today = _today or date.today()
-    if date_range in _DURATION_DAYS:
-        days = _DURATION_DAYS[date_range]
+    if date_range in ("LAST_7_DAYS", "LAST_14_DAYS", "LAST_30_DAYS"):
+        days = PERIOD_DAYS[date_range]
         current_start = today - timedelta(days=days)  # DURING excludes today
         prior_end = current_start - timedelta(days=1)
         prior_start = prior_end - timedelta(days=days - 1)
